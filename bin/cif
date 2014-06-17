@@ -1,0 +1,49 @@
+#!/usr/bin/php -q
+<?php
+ini_set('display_errors', '1');
+
+function __autoload($class_name) { @include $class_name . '.php'; }
+
+
+$o = getopt('phnNq:s:c:r:g:');
+if (! (isset($o['q']) || isset($o['p'])) || isset($o['h'])) {
+  print 'Usage: ' . $argv[0] . ' <-q xyz.com|-p>' . "
+
+    -h  --help:             this message
+    -q  --query:            query string (use 'url\/<md5|sha1>' for url hash lookups)
+    -p  --ping:             send a ping to the server
+    -s  --severity:         severity (low,medium,high), default: high
+    -c  --confidence:       lowest tolerated confidence (0.00 -- 100.00), default 0
+    -r  --restriction:      restriction to be applied to results, default: private
+    -n  --nolog             perform a \"silent\" query (no log query), default: 0
+    -N  --nomap:            don't map restrictions on server (queries only)
+    -g  --guid:             filter by a specific group id (guid), ex: group1.example.com
+";
+  exit;
+}
+
+
+try {
+  $cif = new CIFClient();
+  if (isset($o['p'])) {
+    print "Ping complete in " . $cif->ping() . "\n";
+    exit;
+  }
+  $entries = $cif->query($o['q'], @$o['s'], @$o['c'], @$o['r'], @$o['g'],
+   @$o['N'], @$o['n']);
+} catch (Exception $e) {
+  print $e->getMessage() . "\n";
+  exit;
+}
+
+if (count($entries) < 1) {
+  print 'No entries returned. The server said: '
+   . var_export($entries, TRUE) . "\n";
+  exit;
+}
+
+foreach ($entries as $entry) {
+  print $entry['severity'] . "\t" . $entry['confidence'] . "\t"
+   . $entry['address'] . "\n";
+}
+?>
